@@ -34,7 +34,7 @@ int main(int argc, char const *argv[])
 		sendto(sockfd,sendbuf,sendbuf_len, 0, (struct sockaddr*)&servaddr, servaddr_len);
 		if(strcmp(sendbuf,"exit"))
 			break;
-		if(recvfrom(sockfd, recievebuf, recievebuf_len, 0,(struct sockaddr*)&cliaddr, &cliaddr_len)==-1)
+		if(recvfrom(sockfd, recievebuf, recievebuf_len, 0,(struct sockaddr*)&servaddr, &servaddr_len)==-1)
 			break;
 		printf("%s\n", recievebuf);	
 	}
