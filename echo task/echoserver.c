@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <stdlib.h>
 
 int main(int argc, char const *argv[])
 {
@@ -22,21 +23,24 @@ int main(int argc, char const *argv[])
 	int sockadrr_in_sz = sizeof(struct sockaddr_in);
 	////////////////////////////////////////////////
 	
-	memset(&servaddr, 0, sockadrr_in_sz);
+	sockfd = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_addr.s_addr = inet_addr(ip);
 	servaddr.sin_port = htons(22000); 
 
-	sockfd = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
 	bind(sockfd,(struct sockaddr *)&servaddr,servaddr_len);
 
 	/* Получить сообщение от клиента */
-	recvfrom(sockfd, recievebuf, recievebuf_len, 0,	(struct sockaddr *)&cliaddr, &cliaddr_len);
-	printf("%s\n",recievebuf);
+	while(1){
+		if(recvfrom(sockfd, recievebuf, recievebuf_len, 0,	(struct sockaddr *)&cliaddr, &cliaddr_len)==-1)
+			break;
+		if(!strcmp(recievebuf,"exit"))
+			break;
+		printf("%s\n",recievebuf);
 	/*	Изменю и отправлю клиенту полученное сообщение */
-	recievebuf[3]='K';
+		sendto(sockfd,recievebuf,recievebuf_len, 0, (struct sockaddr *)&cliaddr, cliaddr_len);	
+	}
 
-	sendto(sockfd,recievebuf,recievebuf_len, 0, (struct sockaddr *)&servaddr, servaddr_len);
 	close(sockfd);
 	return 0;
 }
