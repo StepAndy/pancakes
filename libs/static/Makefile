@@ -5,23 +5,25 @@ CC = gcc
 #-------------------
 
 libname = libcalc.a
-libkey = -lcalc
+libkey  = -lcalc
 libpath = -L.
 
 #-------------------
 # file with main()
 # ------------------
 
-my_infile = calc.c
+my_infile  = calc.c
 my_outfile = calc
 
 #-------------------------
 # sources and object files
 # ------------------------
 
-sources = minus.c multiply.c plus.c devide.c
+sources      = minus.c multiply.c plus.c devide.c
 object_files = devide.o minus.o plus.o multiply.o
 
+#-----------------------------------------------------------------
+#-----------------------------------------------------------------
 calc: libcalc_a
 	$(CC)  $(my_infile) -o $(my_outfile) $(libpath) $(libkey)
 
@@ -32,4 +34,6 @@ libcalc_a: .o
 	$(CC) -c $(sources) 
 remove:
 	rm *.o $(my_outfile) $(libname)
+#-----------------------------------------------------------------
+#-----------------------------------------------------------------
 

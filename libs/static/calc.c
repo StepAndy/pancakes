@@ -12,17 +12,21 @@ int main(int argc, char const *argv[])
 	int x,y;
 	char operation;
 
+	printf("Введите знак операции: [ * | + | - | / ]\n");
+	scanf("%s",&operation); // breaking bad
+
 	printf("Введите первое и второе число:\n");
 	scanf("%d",&x);
 	scanf("%d",&y);
-	printf("Введите знак операции: [ * | + | - | / ]\n");
-	scanf("%s",&operation); // breaking bad
+	//printf("Введите знак операции: [ * | + | - | / ]\n");
+	//scanf("%s",&operation); // breaking bad
 	int operation_is = (int)operation;
 	int answer;
 	switch(operation_is){
 		case MULTIPLY:
 			answer = multiply(x,y);
 			break;
+
 		case PLUS:
 			answer = plus(x,y);
 			break;
