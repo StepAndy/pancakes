@@ -5,7 +5,6 @@
 #include <curses.h>
 #include <string.h>
 #include <unistd.h>
-
 #include <stdio.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -20,51 +19,70 @@ void sig_winch(int signo)
     nodelay(stdscr, 0);
 }
 
-WINDOW *identify_win(int x,WINDOW *left,WINDOW *right)
+
+WINDOW *identify_win(int x, WINDOW *left, WINDOW *right)
 {
-    if(x<COLS/2) return left;
-    else return right;
+    if(x < COLS/2) 
+        return left;
+    else 
+        return right;
 }
 
-int open_dir(struct dirent ***namelist,MEVENT event,WINDOW *win) 
+
+int open_dir(WINDOW *win, struct dirent ***namelist, MEVENT event) 
 {                                                                      
-    wclear(win); 
+    int total_content_amount = sizeof(namelist); //ШТА!!!!
+    wprintw(win, "%d\n", total_content_amount);
     wrefresh(win);
-    int n;
+
     struct dirent **local;
     local = *namelist;
     if(local[event.y]->d_type==4){
         char folder[40];
         strcpy(folder,local[event.y]->d_name);                     
-        while(n--){                                                    
-            free(local[n]);
+        while(total_content_amount--){                                                    
+            free(local[total_content_amount]);
         }          
-        n = scandir(folder, namelist, NULL, alphasort);
-        chdir(folder);                                                 
-        return n;
-    }    
+        total_content_amount = scandir(folder, namelist, NULL, alphasort);
+        if(total_content_amount < 0){
+            perror("scandir");   
+        }
+        chdir(folder); 
+
+        return total_content_amount;
+    }
 }
 
-void print_dir_content(int n,struct dirent **namelist,WINDOW *win)
+
+void print_dir_content(WINDOW *win, struct dirent **namelist,
+    int total_content_amount)
 {
-    if (n < 0)
-        perror("scandir");
-    else{
-        int i=0;
-        wmove(win,0,0);
-        while(i < n){
-            if(namelist[i]->d_type==4){
-                wattron(win,A_BOLD);
-            }
-            wprintw(win,"type=%i %i %i %s\n",  namelist[i]->d_type,n, i,namelist[i]->d_name);
-            if(namelist[i]->d_type==4){
-                wattroff(win,A_BOLD);
-            }
-            i++;
-        }
+    wclear(win); 
+    wrefresh(win);
+    int i = 0;
+    wmove(win, 0, 0);
+    while(i < total_content_amount){
+        if(namelist[i]->d_type == 4) wattron(win, A_BOLD);
+        wprintw(win,"type=%i %i %i %s\n",  namelist[i]->d_type,
+                total_content_amount, i,namelist[i]->d_name);
+        if(namelist[i]->d_type == 4) wattroff(win, A_BOLD);
+        i++;
     }
+    wmove(win, 0, 0);
     wrefresh(win);
  }
+
+
+void line_selection(WINDOW *win, struct dirent **namelist)
+{
+    int x, y;
+    getyx(win, y, x);
+    wattron(win, A_REVERSE);
+    mvwprintw(win, y, x, "type=%i %i",  y,x);/*namelist[y]->d_type,
+              namelist[y]->d_name);*/
+    wattroff(win, A_REVERSE);
+    wrefresh(win);
+}
 
 int main(int argc, char const *argv[])
 {
@@ -72,10 +90,10 @@ int main(int argc, char const *argv[])
     WINDOW          *left;
     WINDOW          *right;
     MEVENT          event;
-    int             i,n,key;
-    int             ln,rn;
-    char            LCWD[100],RCWD[100];
-    struct dirent   **lwin_namelist;    //по причине необходимости копии содержимого директории [?]
+    int             total_content_amount, key;
+    int             lcontents_n, rcontents_n;
+    char            LCWD[100], RCWD[100];
+    struct dirent   **lwin_namelist;    //по необходимости копии директории
     struct dirent   **rwin_namelist;                          
 
     initscr();
@@ -86,40 +104,69 @@ int main(int argc, char const *argv[])
     keypad(stdscr, 1); // left & right
     mousemask(ALL_MOUSE_EVENTS, NULL);
 
-    i=0;
-    
     left=derwin(stdscr,LINES,COLS/2,0,0);
     right=derwin(stdscr,LINES,COLS/2,0,COLS/2);
 
-    ln=scandir(".", &lwin_namelist, NULL, alphasort);
-    rn=scandir(".", &rwin_namelist, NULL, alphasort);
-    print_dir_content(ln,lwin_namelist,left);
-    print_dir_content(rn,rwin_namelist,right);   
-    getcwd(LCWD,100);getcwd(RCWD,100);
+    //////////////////////////////////////////////////////////
+    ///////////////////Initial screen/////////////////////////
+    //////////////////////////////////////////////////////////
+    lcontents_n=scandir(".", &lwin_namelist, NULL, alphasort);
+    rcontents_n=scandir(".", &rwin_namelist, NULL, alphasort);
+    print_dir_content(left, lwin_namelist, lcontents_n);
+    print_dir_content(right, rwin_namelist, rcontents_n);   
+    getcwd(LCWD,100);
+    getcwd(RCWD,100);
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////
+    total_content_amount = lcontents_n;
 
     while(1){
-        key=wgetch(stdscr);
+        MEVENT          event;
+        key = wgetch(stdscr);
         getmouse(&event);
-        if(event.y>=n)break;
-        move(event.y,event.x);
-        win=identify_win(event.x,left,right);
+        win = identify_win(event.x, left, right);
+        if((event.y >= lcontents_n && win == left) || 
+           (event.y >= rcontents_n && win == right)) break;
+        move(event.y, event.x);
+        
         switch(key){
             case KEY_MOUSE:
-                /*if(event.bstate & BUTTON1_PRESSED){
+                
+                if(event.bstate & BUTTON1_CLICKED){
+                    if(win == left){
+                        print_dir_content(left, lwin_namelist, 
+                            lcontents_n);
+                        line_selection(left, lwin_namelist);
+                                                                            /*int y,x;
+                                                                            getyx(win,y,x);
+                                                                            mvwprintw(win,y,x,"%d %d",y,x);
+                                                                            wrefresh(left);*/
+                    }
+                    else if(win == right){
+                        print_dir_content(right, rwin_namelist, 
+                            rcontents_n);
+                        line_selection(right, rwin_namelist);
+                    }
 
-                }*/
-                if(event.bstate & BUTTON1_DOUBLE_CLICKED){
-                    if(win==left){
+                }
+
+                if((event.bstate & BUTTON1_DOUBLE_CLICKED)){
+                    if(win == left){
                         chdir(LCWD);
-                        n=open_dir(&lwin_namelist,event,win);
-                        print_dir_content(n,lwin_namelist,left);
-                        getcwd(LCWD,100);
+                        lcontents_n = open_dir(win, &lwin_namelist,
+                            event);
+                        print_dir_content(left, lwin_namelist, 
+                            lcontents_n);
+                        getcwd(LCWD, 100);
                         }    
-                    else if(win==right){
+                    else if(win == right){
                         chdir(RCWD);
-                        n=open_dir(&rwin_namelist,event,win);
-                        print_dir_content(n,rwin_namelist,right);
-                        getcwd(RCWD,100);
+                        rcontents_n = open_dir(win, &rwin_namelist,
+                            event);
+                        print_dir_content(right, rwin_namelist,
+                            rcontents_n);
+                        getcwd(RCWD, 100);
                     }
                 }
                 break;
@@ -128,8 +175,7 @@ int main(int argc, char const *argv[])
             case #DELETE:
             case #ENTER:
             case #TAB:*/
-        }
-       
+        }    
     }
     
     delwin(left);
@@ -137,9 +183,9 @@ int main(int argc, char const *argv[])
     getch();
     endwin();
 
-    while(n--){
-        free(lwin_namelist[n]);
-        free(rwin_namelist[n]);
+    while(total_content_amount--){
+        free(lwin_namelist[total_content_amount]);
+        free(rwin_namelist[total_content_amount]);
         }
     free(lwin_namelist);
     free(rwin_namelist);

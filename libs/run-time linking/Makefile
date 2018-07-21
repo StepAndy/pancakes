@@ -4,9 +4,7 @@ CC = gcc
 #	lib
 #-------------------
 
-libname = libcalc.so
-libkeys  = -lcalc -ldl
-libpath = -L.
+keys  = -ldl
 
 #-------------------
 # file with main()
@@ -24,17 +22,27 @@ object_files = devide.o minus.o plus.o multiply.o
 
 #-----------------------------------------------------------------
 #-----------------------------------------------------------------
-calc: libcalc_a
-	$(CC)  $(my_infile) -o $(my_outfile) $(libpath) $(libkeys)
 
-libcalc_a: .o
-	gcc -shared $(object_files) -o $(libname)
+calc: plus_so devide_so multiply_so minus_so
+	$(CC)  $(my_infile) -o $(my_outfile) $(keys)
 
-.o:  minus.c multiply.c plus.c devide.c
+plus_so: devide_so
+	gcc -shared plus.o -o plus_plugin.so
+
+devide_so: multiply_so
+	gcc -shared devide.o -o devide_plugin.so
+	
+multiply_so: minus_so
+	gcc -shared multiply.o -o multiply_plugin.so
+
+minus_so: _o 
+	gcc -shared minus.o -o minus_plugin.so
+
+_o:  minus.c multiply.c plus.c devide.c
 	$(CC) -c -fPIC $(sources) 
 
 remove:
-	rm *.o $(my_outfile) $(libname)
+	rm *.o *.so $(my_outfile) $(libname) 
 #-----------------------------------------------------------------
 #-----------------------------------------------------------------
 

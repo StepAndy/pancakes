@@ -5,7 +5,7 @@ CC = gcc
 #-------------------
 
 libname = libcalc.so
-libkey  = -lcalc
+libkey  = -lcalc -ldl
 libpath = -L.
 
 #-------------------
@@ -24,10 +24,10 @@ object_files = devide.o minus.o plus.o multiply.o
 
 #-----------------------------------------------------------------
 #-----------------------------------------------------------------
-calc: libcalc_a
+calc: libcalc_so
 	$(CC)  $(my_infile) -o $(my_outfile) $(libpath) $(libkey)
 
-libcalc_a: .o
+libcalc_so: .o
 	gcc -shared $(object_files) -o $(libname)
 
 .o:  minus.c multiply.c plus.c devide.c

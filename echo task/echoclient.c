@@ -32,10 +32,9 @@ int main(int argc, char const *argv[])
 
 	while(1){
 		sendto(sockfd,sendbuf,sendbuf_len, 0, (struct sockaddr*)&servaddr, servaddr_len);
-		if(strcmp(sendbuf,"exit"))
+		if(!strcmp(sendbuf,"exit"))
 			break;
-		if(recvfrom(sockfd, recievebuf, recievebuf_len, 0,(struct sockaddr*)&servaddr, &servaddr_len)==-1)
-			break;
+		recvfrom(sockfd, recievebuf, recievebuf_len, 0,(struct sockaddr*)&servaddr, &servaddr_len);
 		printf("%s\n", recievebuf);	
 	}
 

@@ -38,6 +38,7 @@ int main(int argc, char const *argv[])
 			break;
 		printf("%s\n",recievebuf);
 	/*	Изменю и отправлю клиенту полученное сообщение */
+		recievebuf[1]='Z';
 		sendto(sockfd,recievebuf,recievebuf_len, 0, (struct sockaddr *)&cliaddr, cliaddr_len);	
 	}
 
