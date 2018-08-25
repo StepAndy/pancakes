@@ -1,4 +1,4 @@
-1_homework:
+1_homework: 
     1) step compilation 
     2) calculator + extern function 
 2_homework:
